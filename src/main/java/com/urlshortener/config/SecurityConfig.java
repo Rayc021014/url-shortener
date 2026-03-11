@@ -54,12 +54,14 @@ public class SecurityConfig {
                 // Public: static assets (JS, CSS, icons)
                 .requestMatchers(HttpMethod.GET, "/assets/**", "/favicon.svg", "/favicon.ico").permitAll()
                 // Public: short code redirect endpoint
-                .requestMatchers(HttpMethod.GET, "/{shortCode:[a-zA-Z0-9\\\\-]{4,20}}").permitAll()
+                .requestMatchers(HttpMethod.GET, "/{shortCode:[a-zA-Z0-9\\-]{4,20}}").permitAll()
                 // Public: auth endpoints
                 .requestMatchers("/api/auth/**").permitAll()
                 // Public: Swagger
                 .requestMatchers("/swagger-ui/**", "/api-docs/**", "/swagger-ui.html").permitAll()
-                // Everything else needs auth
+                // Public: health check for Railway
+                .requestMatchers("/actuator/health").permitAll()
+                // Everything else requires a valid JWT
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())
