@@ -12,20 +12,19 @@ RUN npm run build
 FROM eclipse-temurin:17-jdk-alpine AS backend-build
 WORKDIR /app
 
-# Copy Maven wrapper and pom first (layer cache — only re-downloads deps when pom changes)
 COPY mvnw pom.xml ./
 COPY .mvn .mvn/
 RUN chmod +x mvnw
-RUN ./mvnw dependency:go-offline -q
 
-# Copy source
+# Download dependencies — no -q so full errors are visible in Railway logs
+RUN ./mvnw dependency:resolve dependency:resolve-plugins
+
+# Copy source and built frontend
 COPY src ./src
-
-# Copy built frontend into static folder
 COPY --from=frontend-build /app/frontend/dist ./src/main/resources/static/
 
 # Build jar
-RUN ./mvnw clean package -DskipTests -q
+RUN ./mvnw clean package -DskipTests
 
 # ── Stage 3: Run ──────────────────────────────────────────────────────────────
 FROM eclipse-temurin:17-jre-alpine
