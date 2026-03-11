@@ -1,25 +1,35 @@
-# ── Stage 1: Build ────────────────────────────────────────────────────────────
-FROM eclipse-temurin:17-jdk-alpine AS build
+# ── Stage 1: Build frontend ────────────────────────────────────────────────────
+FROM node:20-alpine AS frontend-build
+WORKDIR /app/frontend
+
+COPY frontend/package*.json ./
+RUN npm install
+
+COPY frontend/ ./
+RUN npm run build
+
+# ── Stage 2: Build backend ─────────────────────────────────────────────────────
+FROM eclipse-temurin:17-jdk-alpine AS backend-build
 WORKDIR /app
 
-# Install Node.js for the frontend build
-RUN apk add --no-cache nodejs npm
+# Copy Maven wrapper and pom first (layer cache — only re-downloads deps when pom changes)
+COPY mvnw pom.xml ./
+COPY .mvn .mvn/
+RUN chmod +x mvnw
+RUN ./mvnw dependency:go-offline -q
 
-# Copy everything
-COPY . .
+# Copy source
+COPY src ./src
 
-# Build frontend then backend in one step
-RUN cd frontend && npm install && npm run build && \
-    cp -r dist/* ../src/main/resources/static/ && \
-    cd .. && ./mvnw clean package -DskipTests
+# Copy built frontend into static folder
+COPY --from=frontend-build /app/frontend/dist ./src/main/resources/static/
 
-# ── Stage 2: Run ──────────────────────────────────────────────────────────────
+# Build jar
+RUN ./mvnw clean package -DskipTests -q
+
+# ── Stage 3: Run ──────────────────────────────────────────────────────────────
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
-
-# Copy only the built jar — keeps the image small (~200MB vs ~800MB)
-COPY --from=build /app/target/url-shortener-0.0.1-SNAPSHOT.jar app.jar
-
+COPY --from=backend-build /app/target/url-shortener-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8080
-
 ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=prod"]

@@ -1,0 +1,3 @@
+mvnw text eol=lf
+mvnw linguist-language=Shell
+*.sh text eol=lf
