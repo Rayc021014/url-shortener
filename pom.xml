@@ -97,7 +97,7 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Actuator — for Railway healthcheck at /actuator/health -->
+        <!-- Actuator - for Railway healthcheck at /actuator/health -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
