@@ -16,7 +16,7 @@ COPY mvnw pom.xml ./
 COPY .mvn .mvn/
 RUN chmod +x mvnw
 
-# Download dependencies — no -q so full errors are visible in Railway logs
+# Download dependencies (cache bust: v3)
 RUN ./mvnw dependency:resolve dependency:resolve-plugins
 
 # Copy source and built frontend
